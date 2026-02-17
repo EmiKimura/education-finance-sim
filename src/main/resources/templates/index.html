@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>教育資金シミュレーター | NISA準備ガイド</title>
+    <style>
+        :root {
+            --bg-color: #f4f5f7;
+            --main-color: #94a7ae;
+            --accent-color: #dcb19d;
+            --text-color: #4a4e69;
+            --card-bg: #ffffff;
+            --input-bg: #fdfdfd;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Helvetica Neue', Arial, "Hiragino Sans", "Meiryo", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            padding: 2.5rem;
+            border-radius: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.05);
+            width: 100%;
+            max-width: 480px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+            color: var(--main-color);
+            letter-spacing: 0.05em;
+        }
+
+        h1 span {
+            font-weight: 300;
+            font-size: 1.1rem;
+            display: block;
+            margin-top: 5px;
+            color: #bdc3c7;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.6rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #7f8c8d;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 0.9rem;
+            border: 1px solid #e0e0e0;
+            border-radius: 12px;
+            background-color: var(--input-bg);
+            color: var(--text-color);
+            box-sizing: border-box;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .guide-text {
+            font-size: 0.75rem;
+            color: #95a5a6;
+            margin-top: 0.5rem;
+            line-height: 1.4;
+        }
+
+        button {
+            width: 100%;
+            padding: 1.1rem;
+            border: none;
+            border-radius: 12px;
+            background-color: var(--main-color);
+            color: white;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+
+        .result-area {
+            margin-top: 2.5rem;
+            padding: 1.8rem;
+            background-color: #fafbfc;
+            border-radius: 18px;
+            text-align: center;
+            border: 1px solid #f0f0f0;
+        }
+
+        .bank-value {
+            font-size: 0.95rem;
+            color: #bdc3c7;
+            text-decoration: line-through;
+            margin-bottom: 0.5rem;
+        }
+
+        .result-value {
+            font-size: 2.2rem;
+            color: var(--accent-color);
+            font-weight: bold;
+            display: block;
+        }
+
+        .benefit-badge {
+            display: inline-block;
+            margin-top: 1rem;
+            padding: 0.5rem 1rem;
+            background-color: rgba(220, 177, 157, 0.1);
+            color: var(--accent-color);
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>教育資金<span>シミュレーター</span></h1>
+    
+    <form th:action="@{/calculate}" method="post">
+        <div class="form-group">
+            <label>進路の選択</label>
+            <select name="course">
+                <option th:each="course : ${courses}" 
+                        th:value="${course.key}" 
+                        th:text="${course.value}"
+                        th:selected="${course.key == selectedCourse}"></option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>現在の教育貯金額（円）</label>
+            <input type="number" name="currentSavings" th:value="${#numbers.formatInteger(currentSavings,0)}" min="0">
+        </div>
+
+        <div class="form-group">
+            <label>大学入学までの期間（年）</label>
+            <input type="number" name="yearsUntilCollege" th:value="${yearsUntilCollege}" min="1" max="18">
+        </div>
+
+        <div class="form-group">
+            <label>NISA想定利回り（年利 %）</label>
+            <input type="number" name="annualRate" th:value="${annualRate}" step="0.1" min="0">
+            <p class="guide-text">【目安】 預金: 0.01% / 手堅い運用: 1〜3%</p>
+        </div>
+
+        <button type="submit">将来の必要額を計算する</button>
+    </form>
+
+    <div class="result-area" th:if="${savingNisa != null}">
+        <p style="font-size: 0.9rem; color: #95a5a6;">毎月の積立目安</p>
+        
+        <div class="bank-value">
+            銀行預金のみ：<span th:text="${#numbers.formatInteger(savingBank, 1, 'COMMA')}">0</span>円
+        </div>
+
+        <span style="font-weight: bold; font-size: 0.9rem;">🌟 NISAを活用した場合</span>
+        <span class="result-value">
+            <span th:text="${#numbers.formatInteger(savingNisa, 1, 'COMMA')}">0</span>
+            <span style="font-size: 1rem; color: var(--text-color);">円 / 月</span>
+        </span>
+
+        <div class="benefit-badge">
+            運用により月々 <span th:text="${#numbers.formatInteger(benefit, 1, 'COMMA')}">0</span> 円軽減！
+        </div>
+    </div>
+</div>
+
+</body>
+</html>
